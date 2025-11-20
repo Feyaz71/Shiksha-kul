@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="stylesheet.css">
+</head>
+<body style="background-color: #e7ddff;">
+    <div class="wrapper">
+        <h1>Login</h1>
+        <div id="error-message" class="error" style="color: red; margin-bottom: 10px;"></div>
+
+        <form action="login.php" method="POST">
+            <div>
+                <label for="email-input">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+                        <path d="M172-126q-53 0-89.5-36.5T46-252v-456q0-53 36.5-89.5T172-834h616q53 0 89.5 36.5T914-708v456q0 53-36.5 89.5T788-126H172Zm308-271 308-200v-111L480-508 172-708v111l308 200Z"/>
+                    </svg>
+                </label>
+                <input required type="email" name="email" id="email-input" placeholder="Email">
+            </div>
+            <div>
+                <label for="password-input">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+                        <path d="M252-49q-51.98 0-88.99-37.01Q126-123.03 126-175v-376q0-51.97 37.01-88.99Q200.02-677 252-677h13v-51q0-91 62.5-154.5T480-946q90 0 152.5 63.5T695-728v51h13q51.97 0 88.99 37.01Q834-602.97 834-551v376q0 51.97-37.01 88.99Q759.97-49 708-49H252Zm228-234q33 0 56.5-23.5T560-363q0-33-23.5-56.5T480-443q-33 0-56.5 23.5T400-363q0 33 23.5 56.5T480-283Z"/>
+                    </svg>
+                </label>
+                <input required type="password" name="password" id="password-input" placeholder="Password">
+            </div>
+            <div>
+                <button type="submit">Login</button>
+            </div>
+        </form>
+
+        <!-- Forgot Password Link -->
+        <p><a href="forgot_password.html" style="color: blue; text-decoration: none;">Forgot Password?</a></p>
+
+        <p>Don't have an account? <a href="register.html">Register</a></p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMessage = urlParams.get("error");
+    
+            if (errorMessage) {
+                document.getElementById("error-message").textContent = errorMessage;
+            }
+        });
+    </script>
+</body>
+</html>

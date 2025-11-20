@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Chatbot</title>
+    <style>
+        /* --- STYLES REMAIN THE SAME --- */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            background-color: #e7ddff;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #4d2aaf;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        .sidebar button {
+            padding: 8px 15px;
+            margin-top: 10px;
+            background-color: #ff5757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .sidebar h3 {
+            margin-top: 0;
+        }
+
+        .sidebar .history {
+            margin-top: 20px;
+            flex-grow: 1; 
+        }
+
+        .sidebar .history div {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #6546b4; 
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px 0 0 10px;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex; 
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: #4d2aaf;
+            color: white;
+            margin-left: auto; 
+        }
+
+        .ai-message {
+            background-color: #e0e0e0;
+            color: black;
+            margin-right: auto; 
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .chat-form button {
+            padding: 12px 20px;
+            background-color: #4d2aaf;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .chat-form button:hover {
+            background-color: #0d1b5c;
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+
+            .main-container {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Previous Chats</h3>
+        <div class="history" id="chatHistory">
+            </div>
+        <button id="clearHistoryBtn">Clear History</button>
+    </div>
+
+    <div class="main-container">
+        <h2>ASK YOUR QUERY </h2>
+        <div class="chat-box" id="chatBox">
+            </div>
+
+        <form id="chatForm" class="chat-form">
+            <input type="text" id="userMessage" placeholder="Ask your question..." required />
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // --- 🔑 API CONFIGURATION (Client-Side Access) ---
+        // WARNING: API key is visible to anyone viewing your page source. 
+        // This is a trade-off for using free hosting without cURL access.
+        const API_KEY = "AIzaSyAe95JYJQV_uq6EPeLl9Hnd5cTYkzZgbfo"; 
+        const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+        // --- DOM Elements ---
+        const form = document.getElementById('chatForm');
+        const chatBox = document.getElementById('chatBox');
+        const historyBox = document.getElementById('chatHistory');
+        const inputField = document.getElementById('userMessage');
+        const clearBtn = document.getElementById('clearHistoryBtn');
+
+        // Helper function to create a message element
+        function createMessageElement(sender, text) {
+            const div = document.createElement('div');
+            div.classList.add('message');
+            div.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+            // Use innerHTML to correctly render line breaks
+            div.innerHTML = text; 
+            return div;
+        }
+        
+        // Helper function to create a history preview element
+        function createHistoryPreview(message) {
+              const historyItem = document.createElement('div');
+              historyItem.innerText = message.length > 40 ? message.slice(0, 37) + "..." : message;
+              return historyItem;
+        }
+
+        // --- LOAD HISTORY ON PAGE LOAD ---
+        function loadChatHistory() {
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            
+            history.forEach(msg => {
+                chatBox.appendChild(createMessageElement(msg.sender, msg.text));
+            });
+
+            let lastSender = null;
+            history.slice().reverse().forEach(msg => {
+                if (msg.sender === 'user' && lastSender !== 'user') {
+                    historyBox.prepend(createHistoryPreview(msg.text));
+                }
+                lastSender = msg.sender;
+            });
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // --- CLEAR HISTORY BUTTON LISTENER ---
+        clearBtn.addEventListener('click', () => {
+              if (confirm("Are you sure you want to delete all chat history?")) {
+                  localStorage.removeItem('chatHistory');
+                  chatBox.innerHTML = ''; 
+                  historyBox.innerHTML = ''; 
+              }
+        });
+
+
+        // --- FORM SUBMISSION (API CALL IS HERE) ---
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const message = inputField.value.trim();
+            if (!message) return;
+
+            // 1. Display user message
+            const userMessageDiv = createMessageElement('user', message);
+            chatBox.appendChild(userMessageDiv);
+
+            // 2. Add to sidebar (preview)
+            const historyItem = createHistoryPreview(message);
+            historyBox.prepend(historyItem);
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+            inputField.value = "";
+            
+            // Add a temporary loading message
+            const loadingMessage = createMessageElement('ai', 'Thinking...');
+            chatBox.appendChild(loadingMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            
+            // 3. API Request Payload
+            const payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": `You are a helpful tutor bot.\nUser: ${message}`}
+                        ]
+                    }
+                ]
+            };
+
+            let aiReplyText = "An error occurred. Check your console for details (F12).";
+            
+            try {
+                // Perform the fetch request directly to the Gemini API
+                const apiResponse = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await apiResponse.json();
+
+                if (apiResponse.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    // Success: Get the response text
+                    aiReplyText = data.candidates[0].content.parts[0].text;
+                } else if (data.error) {
+                    // API-level error (e.g., API key invalid)
+                    aiReplyText = `Gemini API Error: ${data.error.message}`;
+                    console.error("Gemini API Error:", data.error.message);
+                } else {
+                    // Unknown error
+                    aiReplyText = `Gemini API Error: Could not get a valid response.`;
+                    console.error("Unknown API Response:", data);
+                }
+
+            } catch (error) {
+                // Network error
+                aiReplyText = `Network Error: ${error.message}.`;
+                console.error("Fetch Error:", error);
+            }
+
+            
+            // 4. Remove loading message
+            chatBox.removeChild(loadingMessage);
+
+            // 5. Display AI message (replace newlines with HTML <br />)
+            const formattedReply = aiReplyText.replace(/\n/g, '<br />');
+            const aiMessageDiv = createMessageElement('ai', formattedReply);
+            chatBox.appendChild(aiMessageDiv);
+
+            // 6. --- SAVE HISTORY ---
+            const userMsgObj = { sender: 'user', text: message };
+            const aiReplyObj = { sender: 'ai', text: formattedReply }; // Save formatted reply
+
+            let history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            history.push(userMsgObj, aiReplyObj);
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+            // --- END SAVE HISTORY ---
+            
+            // Scroll to show new message
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+        
+        // EXECUTE LOAD HISTORY
+        loadChatHistory();
+    </script>
+
+</body>
+</html>
