@@ -141,11 +141,6 @@ http://localhost/Shiksha-kul
 
 ---
 
-## 📸 **Screenshots (Optional)**
-
-*Add screenshots here once the UI is finalized.*
-
----
 
 ## 📈 **Future Enhancements**
 
